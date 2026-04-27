@@ -107,6 +107,11 @@ const Project = () => {
             setMessages(prev => [...prev, data])
         })
 
+        receiveMessage('project-update', data => {
+            setFileTree(data.fileTree || {})
+            webContainer?.mount(data.fileTree || {})
+        })
+
         axios.get(`/projects/get-project/${projectId}`).then(res => {
             setProject(res.data.project)
             setFileTree(res.data.project.fileTree || {})
@@ -118,10 +123,10 @@ const Project = () => {
     }, [projectId])
 
     function saveFileTree(ft) {
-        axios.put('/projects/update-file-tree', {
+        sendMessage('project-update', {
             projectId: project._id,
             fileTree: ft
-        }).then(res => console.log(res.data)).catch(err => console.log(err))
+        })
     }
 
     const runProject = async () => {

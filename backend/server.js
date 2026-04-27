@@ -84,6 +84,17 @@ io.on('connection', socket => {
             return;
         }
 
+        socket.on('project-update', async data => {
+            const projectId = data.projectId;
+            const fileTree = data.fileTree;
+
+            await projectModel.findByIdAndUpdate(projectId, {
+                fileTree
+            });
+
+            socket.to(socket.roomId).emit('project-update', data);
+        });
+
         
     });
 
