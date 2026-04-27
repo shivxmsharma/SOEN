@@ -33,6 +33,7 @@ const Project = () => {
     const [selectedUserId, setSelectedUserId] = useState(new Set())
     const [project, setProject] = useState(location.state?.project || null)
     const [message, setMessage] = useState('')
+    const [streamingMessage, setStreamingMessage] = useState('')
     const { user } = useContext(UserContext)
     const messageBoxRef = useRef(null)
 
@@ -96,8 +97,13 @@ const Project = () => {
             })
         }
 
+        receiveMessage('ai-response-chunk', data => {
+            setStreamingMessage(prev => prev + data.chunk)
+        })
+
         receiveMessage('project-message', data => {
             if (data.sender?._id == 'ai') {
+                setStreamingMessage('') // Clear streaming message
                 const message = JSON.parse(data.message)
                 webContainer?.mount(message.fileTree)
                 if (message.fileTree) {
@@ -181,6 +187,7 @@ const Project = () => {
                 writeAiMessage={WriteAiMessage}
                 messageBoxRef={messageBoxRef}
                 setIsModalOpen={setIsModalOpen}
+                streamingMessage={streamingMessage}
             />
 
             <div className="vertical-separator w-px h-full bg-slate-800 shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10"></div>

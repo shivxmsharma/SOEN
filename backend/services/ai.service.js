@@ -209,7 +209,6 @@ response: {
     ],
   });
 
-  // return just the content text
   const content = result?.candidates?.[0]?.content;
   if (!content) return "No content returned";
 
@@ -220,3 +219,28 @@ response: {
     return { text: content.parts?.[0]?.text || "Could not parse structured response" };
   }
 };
+
+// Streaming version
+export const generateContentStream = async (prompt) => {
+    return ai.models.generateContentStream({
+        model: "gemini-3-flash-preview",
+        generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.4,
+        },
+        contents: [
+            {
+                role: "user",
+                parts: [{ text: `
+You are an expert in MERN and Development. You have 10 years of experience in writing scalable and maintainable production code.
+Always return your output in JSON format as specified in the previous examples.
+` }]
+            },
+            {
+                role: "user",
+                parts: [{ text: prompt }]
+            }
+        ]
+    });
+};
+

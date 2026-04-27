@@ -1,6 +1,15 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
-const ChatPanel = ({ messages, message, setMessage, send, isSidePanelOpen, setIsSidePanelOpen, project, user, writeAiMessage, messageBoxRef, setIsModalOpen }) => {
+const ChatPanel = ({ messages, message, setMessage, send, isSidePanelOpen, setIsSidePanelOpen, project, user, writeAiMessage, messageBoxRef, setIsModalOpen, streamingMessage }) => {
+
+    function scrollToBottom() {
+        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight
+    }
+
+    useEffect(() => {
+        scrollToBottom()
+    }, [messages, streamingMessage])
+
     return (
         <section className="left relative flex flex-col h-screen w-96 max-w-full bg-slate-950 border-r border-slate-800 shadow-2xl z-20">
             <header className='flex justify-between items-center p-3 px-4 w-full bg-slate-900/50 backdrop-blur-md border-b border-slate-800 absolute z-10 top-0'>
@@ -30,6 +39,15 @@ const ChatPanel = ({ messages, message, setMessage, send, isSidePanelOpen, setIs
                             </div>
                         )
                     })}
+
+                    {streamingMessage && (
+                        <div className='flex flex-col items-start'>
+                            <small className='opacity-65 text-[10px] mb-1 px-1 text-slate-400'>AI Assistant</small>
+                            <div className='p-2 px-3 rounded-2xl text-sm shadow-sm bg-slate-800 text-slate-100 max-w-[85%] border border-slate-700'>
+                                {writeAiMessage(streamingMessage)}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="inputField w-full flex p-3 bg-slate-800 border-t border-slate-700 absolute bottom-0 gap-2">
