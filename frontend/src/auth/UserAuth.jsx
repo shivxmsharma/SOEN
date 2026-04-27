@@ -1,32 +1,19 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserContext } from '../context/user.context'
 
 const UserAuth = ({ children }) => {
 
-    const { user } = useContext(UserContext)
-    const [loading, setloading] = useState(true)
-    const token = localStorage.getItem('token')
+    const { user, loading } = useContext(UserContext)
     const Navigate = useNavigate()
 
-    
-    
-    
     useEffect(() => {
-        
-        if(user) {
-            setloading(false)
+        if (!loading) {
+            if (!user) {
+                Navigate('/login')
+            }
         }
-
-        if (!token) {
-            Navigate('/login')
-        }
-
-        if(!user) {
-            Navigate('/login')
-        }
-
-    }, [])
+    }, [loading, user])
 
     if (loading) {
         return (

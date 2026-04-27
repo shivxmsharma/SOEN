@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react'
 import { UserContext } from '../context/user.context'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import axios from '../config/axios'
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket'
 import Markdown from 'markdown-to-jsx'
@@ -10,6 +10,7 @@ import ChatPanel from '../components/ChatPanel'
 import FileTree from '../components/FileTree'
 import EditorPanel from '../components/EditorPanel'
 import PreviewPanel from '../components/PreviewPanel'
+import TerminalPanel from '../components/TerminalPanel'
 
 function SyntaxHighlightedCode(props) {
     const ref = useRef(null)
@@ -25,11 +26,12 @@ function SyntaxHighlightedCode(props) {
 }
 
 const Project = () => {
+    const { projectId } = useParams()
     const location = useLocation()
     const [isSidePanelOpen, setIsSidePanelOpen] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedUserId, setSelectedUserId] = useState(new Set())
-    const [project, setProject] = useState(location.state.project)
+    const [project, setProject] = useState(location.state?.project || null)
     const [message, setMessage] = useState('')
     const { user } = useContext(UserContext)
     const messageBoxRef = useRef(null)
@@ -42,6 +44,7 @@ const Project = () => {
     const [webContainer, setWebContainer] = useState(null)
     const [iframeUrl, setIframeUrl] = useState(null)
     const [runProcess, setRunProcess] = useState(null)
+    const [terminalOutput, setTerminalOutput] = useState('')
 
     const handleUserClick = (id) => {
         setSelectedUserId(prev => {
@@ -84,7 +87,7 @@ const Project = () => {
     }
 
     useEffect(() => {
-        initializeSocket(project._id)
+        initializeSocket(projectId)
 
         if (!webContainer) {
             getWebContainer().then(container => {
@@ -94,7 +97,7 @@ const Project = () => {
         }
 
         receiveMessage('project-message', data => {
-            if (data.sender._id == 'ai') {
+            if (data.sender?._id == 'ai') {
                 const message = JSON.parse(data.message)
                 webContainer?.mount(message.fileTree)
                 if (message.fileTree) {
@@ -104,7 +107,7 @@ const Project = () => {
             setMessages(prev => [...prev, data])
         })
 
-        axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
+        axios.get(`/projects/get-project/${projectId}`).then(res => {
             setProject(res.data.project)
             setFileTree(res.data.project.fileTree || {})
         })
@@ -112,7 +115,7 @@ const Project = () => {
         axios.get('/users/all').then(res => {
             setUsers(res.data.users)
         }).catch(err => console.log(err))
-    }, [])
+    }, [projectId])
 
     function saveFileTree(ft) {
         axios.put('/projects/update-file-tree', {
@@ -122,26 +125,41 @@ const Project = () => {
     }
 
     const runProject = async () => {
+        setTerminalOutput('\x1b[33mStarting project...\x1b[0m\r\n')
         await webContainer.mount(fileTree)
+        
+        setTerminalOutput(prev => prev + '\x1b[36mRunning npm install...\x1b[0m\r\n')
         const installProcess = await webContainer.spawn("npm", ["install"])
         installProcess.output.pipeTo(new WritableStream({
-            write(chunk) { console.log(chunk) }
+            write(chunk) { setTerminalOutput(prev => prev + chunk) }
         }))
+
+        await installProcess.exit;
 
         if (runProcess) {
             runProcess.kill()
         }
 
+        setTerminalOutput(prev => prev + '\x1b[36mRunning npm start...\x1b[0m\r\n')
         let tempRunProcess = await webContainer.spawn("npm", ["start"]);
         tempRunProcess.output.pipeTo(new WritableStream({
-            write(chunk) { console.log(chunk) }
+            write(chunk) { setTerminalOutput(prev => prev + chunk) }
         }))
 
         setRunProcess(tempRunProcess)
 
         webContainer.on('server-ready', (port, url) => {
+            setTerminalOutput(prev => prev + `\x1b[32mServer ready at ${url}\x1b[0m\r\n`)
             setIframeUrl(url)
         })
+    }
+
+    if (!project) {
+        return (
+            <div className="h-screen w-screen bg-slate-900 flex items-center justify-center">
+                <div className="text-white text-xl animate-pulse">Loading Project...</div>
+            </div>
+        )
     }
 
     return (
@@ -160,55 +178,69 @@ const Project = () => {
                 setIsModalOpen={setIsModalOpen}
             />
 
-            <section className="right bg-red-50 flex-grow h-full flex">
+            <div className="vertical-separator w-px h-full bg-slate-800 shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10"></div>
+
+            <section className="right bg-slate-900 flex-grow h-full flex min-w-0 overflow-hidden">
                 <FileTree 
                     fileTree={fileTree}
                     setCurrentFile={setCurrentFile}
                     setOpenFiles={setOpenFiles}
                     openFiles={openFiles}
-                />
-
-                <EditorPanel 
-                    openFiles={openFiles}
                     currentFile={currentFile}
-                    setCurrentFile={setCurrentFile}
-                    fileTree={fileTree}
-                    setFileTree={setFileTree}
-                    saveFileTree={saveFileTree}
-                    runProject={runProject}
-                    webContainer={webContainer}
                 />
 
-                <PreviewPanel 
-                    iframeUrl={iframeUrl}
-                    setIframeUrl={setIframeUrl}
-                    webContainer={webContainer}
-                />
+                <div className="main-editor-area flex flex-col flex-grow h-full min-w-0">
+                    <div className="upper flex-grow flex min-h-0 border-b border-slate-700">
+                        <EditorPanel 
+                            openFiles={openFiles}
+                            currentFile={currentFile}
+                            setCurrentFile={setCurrentFile}
+                            fileTree={fileTree}
+                            setFileTree={setFileTree}
+                            saveFileTree={saveFileTree}
+                            runProject={runProject}
+                            webContainer={webContainer}
+                        />
+                        <PreviewPanel 
+                            iframeUrl={iframeUrl}
+                            setIframeUrl={setIframeUrl}
+                            webContainer={webContainer}
+                        />
+                    </div>
+                    <div className="lower h-56 min-h-40">
+                        <TerminalPanel terminalOutput={terminalOutput} />
+                    </div>
+                </div>
             </section>
 
+
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white p-4 rounded-md w-96 max-w-full relative">
-                        <header className='flex justify-between items-center mb-4'>
-                            <h2 className='text-xl font-semibold'>Select User</h2>
-                            <button onClick={() => setIsModalOpen(false)} className='p-2'>
-                                <i className="ri-close-fill"></i>
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-96 max-w-full relative shadow-2xl">
+                        <header className='flex justify-between items-center mb-6'>
+                            <h2 className='text-xl font-bold text-slate-100'>Add Collaborators</h2>
+                            <button onClick={() => setIsModalOpen(false)} className='p-2 text-slate-400 hover:text-white transition-colors'>
+                                <i className="ri-close-line text-2xl"></i>
                             </button>
                         </header>
-                        <div className="users-list flex flex-col gap-2 mb-16 max-h-96 overflow-auto">
+                        <div className="users-list flex flex-col gap-2 mb-8 max-h-80 overflow-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700">
                             {users.map(u => (
-                                <div key={u._id} className={`user cursor-pointer hover:bg-slate-200 ${Array.from(selectedUserId).indexOf(u._id) != -1 ? 'bg-slate-200' : ""} p-2 flex gap-2 items-center`} onClick={() => handleUserClick(u._id)}>
-                                    <div className='aspect-square relative rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
-                                        <i className="ri-user-fill absolute"></i>
+                                <div 
+                                    key={u._id} 
+                                    className={`user cursor-pointer hover:bg-slate-800 p-3 rounded-xl flex gap-3 items-center transition-all ${Array.from(selectedUserId).indexOf(u._id) != -1 ? 'bg-slate-800 border-l-4 border-blue-500' : 'border-l-4 border-transparent'}`} 
+                                    onClick={() => handleUserClick(u._id)}
+                                >
+                                    <div className='w-10 h-10 rounded-full flex items-center justify-center text-white bg-blue-600 font-bold'>
+                                        {u.email ? u.email[0].toUpperCase() : '?'}
                                     </div>
-                                    <h1 className='font-semibold text-lg'>{u.email}</h1>
+                                    <h1 className='font-medium text-slate-200 truncate'>{u.email}</h1>
                                 </div>
                             ))}
                         </div>
                         <button
                             onClick={addCollaborators}
-                            className='absolute bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 bg-blue-600 text-white rounded-md'>
-                            Add Collaborators
+                            className='w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98]'>
+                            Invite Selected
                         </button>
                     </div>
                 </div>
@@ -217,4 +249,5 @@ const Project = () => {
     )
 }
 
-export default Project
+export default Project
+

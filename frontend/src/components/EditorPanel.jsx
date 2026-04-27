@@ -1,18 +1,32 @@
 import React from 'react'
-import hljs from 'highlight.js';
+import Editor from '@monaco-editor/react'
 
-const EditorPanel = ({ openFiles, currentFile, setCurrentFile, fileTree, setFileTree, saveFileTree, runProject, iframeUrl, setIframeUrl, webContainer }) => {
+const EditorPanel = ({ openFiles, currentFile, setCurrentFile, fileTree, setFileTree, saveFileTree, runProject, webContainer }) => {
+    
+    const handleEditorChange = (value) => {
+        const ft = {
+            ...fileTree,
+            [currentFile]: {
+                file: {
+                    contents: value
+                }
+            }
+        }
+        setFileTree(ft)
+        saveFileTree(ft)
+    }
+
     return (
-        <div className="code-editor flex flex-col flex-grow h-full shrink">
-            <div className="top flex justify-between w-full">
-                <div className="files flex">
+        <div className="code-editor flex flex-col flex-grow h-full min-w-0">
+            <div className="top flex justify-between w-full p-2 bg-slate-200 min-w-0">
+                <div className="files flex gap-1 overflow-x-auto scrollbar-hide min-w-0 pr-4">
                     {
                         openFiles.map((file, index) => (
                             <button
                                 key={index}
                                 onClick={() => setCurrentFile(file)}
-                                className={`open-file cursor-pointer p-2 px-4 flex items-center w-fit gap-2 bg-slate-300 ${currentFile === file ? 'bg-slate-400' : ''}`}>
-                                <p className='font-semibold text-lg'>{file}</p>
+                                className={`open-file cursor-pointer p-1 px-3 flex items-center w-fit gap-2 rounded-t-md transition-colors ${currentFile === file ? 'bg-slate-50 text-slate-900' : 'bg-slate-300 text-slate-600 hover:bg-slate-400'}`}>
+                                <p className='font-medium text-sm'>{file}</p>
                             </button>
                         ))
                     }
@@ -20,43 +34,29 @@ const EditorPanel = ({ openFiles, currentFile, setCurrentFile, fileTree, setFile
                 <div className="actions flex gap-2">
                     <button
                         onClick={runProject}
-                        className='p-2 px-4 bg-slate-300 text-white'
+                        className='p-1 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors'
                     >
-                        run
+                        Run
                     </button>
                 </div>
             </div>
-            <div className="bottom flex flex-grow max-w-full shrink overflow-auto">
+            <div className="bottom flex-grow max-w-full overflow-hidden">
                 {
-                    fileTree[currentFile] && (
-                        <div className="code-editor-area h-full overflow-auto flex-grow bg-slate-50">
-                            <pre className="hljs h-full">
-                                <code
-                                    className="hljs h-full outline-none"
-                                    contentEditable
-                                    suppressContentEditableWarning
-                                    onBlur={(e) => {
-                                        const updatedContent = e.target.innerText;
-                                        const ft = {
-                                            ...fileTree,
-                                            [currentFile]: {
-                                                file: {
-                                                    contents: updatedContent
-                                                }
-                                            }
-                                        }
-                                        setFileTree(ft)
-                                        saveFileTree(ft)
-                                    }}
-                                    dangerouslySetInnerHTML={{ __html: hljs.highlight('javascript', fileTree[currentFile].file.contents).value }}
-                                    style={{
-                                        whiteSpace: 'pre-wrap',
-                                        paddingBottom: '25rem',
-                                        counterSet: 'line-numbering',
-                                    }}
-                                />
-                            </pre>
-                        </div>
+                    currentFile && fileTree[currentFile] && (
+                        <Editor
+                            height="100%"
+                            defaultLanguage="javascript"
+                            path={currentFile}
+                            value={fileTree[currentFile].file.contents}
+                            onChange={handleEditorChange}
+                            theme="vs-dark"
+                            options={{
+                                fontSize: 14,
+                                minimap: { enabled: false },
+                                scrollBeyondLastLine: false,
+                                automaticLayout: true,
+                            }}
+                        />
                     )
                 }
             </div>
@@ -65,3 +65,4 @@ const EditorPanel = ({ openFiles, currentFile, setCurrentFile, fileTree, setFile
 }
 
 export default EditorPanel
+

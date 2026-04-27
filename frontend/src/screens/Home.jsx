@@ -52,7 +52,7 @@ const Home = () => {
                     project.map((project) => (
                         <div key={project._id}
                             onClick={() => {
-                                navigate(`/project`, {
+                                navigate(`/project/${project._id}`, {
                                     state: { project }
                                 })
                             }}
