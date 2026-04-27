@@ -31,7 +31,7 @@ io.use(async (socket, next) => {
             return next(new Error('Invalid project ID'));
         }
 
-        socket.projectId = await projectModel.findById(projectId);
+        socket.project = await projectModel.findById(projectId);
 
         if (!token) {
             return next(new Error('Authentication error'));
