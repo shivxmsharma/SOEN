@@ -1,13 +1,19 @@
 import React from 'react'
 
 const FileTree = ({ fileTree, setCurrentFile, setOpenFiles, openFiles, currentFile }) => {
+    
+    const getFileColor = (filename) => {
+        if (!filename.includes('.')) return 'text-[var(--ide-text-muted)]';
+        if (filename.endsWith('.jsx')) return 'text-blue-400';
+        if (filename.endsWith('.js')) return 'text-orange-400';
+        if (filename.endsWith('.json')) return 'text-slate-400';
+        if (filename.endsWith('.css')) return 'text-purple-400';
+        return 'text-[var(--ide-text-secondary)]';
+    }
+
     return (
-        <div className="explorer h-full w-64 max-w-full bg-slate-800 border-r border-slate-700 flex flex-col">
-            <header className='p-3 px-4 border-b border-slate-700 flex justify-between items-center'>
-                <h2 className='text-slate-100 font-semibold text-sm tracking-tight'>Files</h2>
-                <i className="ri-file-add-line text-slate-400 hover:text-white cursor-pointer transition-colors"></i>
-            </header>
-            <div className="file-tree w-full py-2 overflow-auto">
+        <div className="flex flex-col h-full bg-transparent w-full">
+            <div className="w-full py-2 overflow-auto">
                 {
                     Object.keys(fileTree).map((file, index) => (
                         <button
@@ -16,9 +22,9 @@ const FileTree = ({ fileTree, setCurrentFile, setOpenFiles, openFiles, currentFi
                                 setCurrentFile(file)
                                 setOpenFiles([ ...new Set([ ...openFiles, file ]) ])
                             }}
-                            className={`tree-element cursor-pointer p-2 px-4 flex items-center gap-2 w-full transition-all group ${currentFile === file ? 'bg-slate-700 text-blue-400 border-r-2 border-blue-400' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'}`}>
-                            <i className={`${file.includes('.') ? 'ri-file-code-line' : 'ri-folder-line'} text-lg ${currentFile === file ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'}`}></i>
-                            <p className='text-sm font-medium truncate'>{file}</p>
+                            className={`cursor-pointer p-1.5 px-3 flex items-center gap-2 w-full transition-all group border-l-2 ${currentFile === file ? 'bg-[var(--ide-accent)]/10 text-[var(--ide-text-active)] border-[var(--ide-accent)]' : 'border-transparent text-[var(--ide-text-secondary)] hover:bg-[var(--ide-border)] hover:text-[var(--ide-text-active)]'}`}>
+                            <i className={`${file.includes('.') ? 'ri-file-code-line' : 'ri-folder-line'} text-[14px] ${currentFile === file ? 'text-[var(--ide-accent)]' : getFileColor(file)}`}></i>
+                            <p className='text-[11px] font-medium truncate'>{file}</p>
                         </button>))
                 }
             </div>

@@ -1,12 +1,66 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
 * {
-    margin: 0%;
-    padding: 0%;
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
+}
+
+:root {
+  --ide-bg: #0d0d14;
+  --ide-surface: #0a0a10;
+  --ide-border: rgba(255, 255, 255, 0.07);
+  --ide-accent: #3b82f6;
+  --ide-text-muted: #475569;
+  --ide-text-active: #e2e8f0;
+  --ide-text-secondary: #94a3b8;
+  --ide-terminal: #070710;
+  --ide-status: #1e40af;
 }
 
 html, body {
     height: 100%;
     width: 100%;
+    background-color: var(--ide-bg);
+    color: var(--ide-text-secondary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar for IDE feel */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e1e2d; /* slightly lighter than bg */
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2d2d3f;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+/* Utility to hide scrollbar but keep functionality */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }

@@ -12,26 +12,40 @@ const TerminalPanel = ({ terminalOutput }) => {
             termInstance.current = new Terminal({
                 cursorBlink: true,
                 theme: {
-                    background: '#1e293b', // slate-800
-                    foreground: '#f1f5f9', // slate-100
+                    background: '#070710',
+                    foreground: '#94a3b8',
+                    cursor: '#e2e8f0',
+                    selectionBackground: '#3b82f640',
                 },
                 fontSize: 12,
-                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                fontFamily: 'var(--font-mono)',
             })
 
             const fitAddon = new FitAddon()
             termInstance.current.loadAddon(fitAddon)
             termInstance.current.open(terminalRef.current)
-            fitAddon.fit()
+            
+            // Wait for DOM to settle
+            setTimeout(() => {
+                fitAddon.fit()
+            }, 10)
 
             // Handle window resize
-            window.addEventListener('resize', () => fitAddon.fit())
-        }
-
-        return () => {
-            if (termInstance.current) {
-                termInstance.current.dispose()
-                termInstance.current = null
+            const handleResize = () => {
+                try {
+                    fitAddon.fit()
+                } catch (e) {
+                    // Ignore resize errors when hidden
+                }
+            }
+            window.addEventListener('resize', handleResize)
+            
+            return () => {
+                window.removeEventListener('resize', handleResize)
+                if (termInstance.current) {
+                    termInstance.current.dispose()
+                    termInstance.current = null
+                }
             }
         }
     }, [])
@@ -43,7 +57,7 @@ const TerminalPanel = ({ terminalOutput }) => {
     }, [terminalOutput])
 
     return (
-        <div className="terminal-container h-full w-full bg-slate-800 p-2 overflow-hidden">
+        <div className="terminal-container h-full w-full bg-[var(--ide-terminal)] p-2 pl-4 overflow-hidden">
             <div ref={terminalRef} className="h-full w-full" />
         </div>
     )

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 
-const ChatPanel = ({ messages, message, setMessage, send, isSidePanelOpen, setIsSidePanelOpen, project, user, writeAiMessage, messageBoxRef, setIsModalOpen, streamingMessage }) => {
+const ChatPanel = ({ messages, message, setMessage, send, project, user, writeAiMessage, messageBoxRef, streamingMessage }) => {
 
     function scrollToBottom() {
-        messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight
+        if (messageBoxRef.current) {
+            messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight
+        }
     }
 
     useEffect(() => {
@@ -11,30 +13,34 @@ const ChatPanel = ({ messages, message, setMessage, send, isSidePanelOpen, setIs
     }, [messages, streamingMessage])
 
     return (
-        <section className="left relative flex flex-col h-screen w-96 max-w-full bg-slate-950 border-r border-slate-800 shadow-2xl z-20">
-            <header className='flex justify-between items-center p-3 px-4 w-full bg-slate-900/50 backdrop-blur-md border-b border-slate-800 absolute z-10 top-0'>
-                <button className='flex gap-2 items-center text-slate-400 hover:text-white transition-colors group' onClick={() => setIsModalOpen(true)}>
-                    <i className="ri-user-add-line text-lg group-hover:scale-110 transition-transform"></i>
-                    <p className='text-xs font-semibold uppercase tracking-wider'>Invite</p>
-                </button>
-                <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='p-2 text-slate-400 hover:text-white transition-colors'>
-                    <i className="ri-group-line text-xl"></i>
-                </button>
-            </header>
-            
-            <div className="conversation-area pt-16 pb-14 flex-grow flex flex-col h-full relative overflow-hidden">
+        <section className="flex flex-col h-full bg-transparent">
+            <div className="conversation-area flex-grow flex flex-col min-h-0 relative">
                 <div
                     ref={messageBoxRef}
-                    className="message-box p-4 flex-grow flex flex-col gap-3 overflow-auto max-h-full scrollbar-hide">
+                    className="message-box p-4 flex-grow flex flex-col gap-4 overflow-auto scrollbar-hide"
+                >
                     {messages.map((msg, index) => {
                         const isUser = msg.sender?._id && user?._id && (msg.sender._id === user._id.toString() || msg.sender._id === user._id);
                         return (
                             <div key={index} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-                                <small className='opacity-65 text-[10px] mb-1 px-1 text-slate-400'>{msg.sender?.email || 'Anonymous'}</small>
-                                <div className={`p-2 px-3 rounded-2xl text-sm shadow-sm ${msg.sender?._id === 'ai' ? 'bg-slate-800 text-slate-100 max-w-[85%] border border-slate-700' : isUser ? 'bg-blue-600 text-white max-w-[75%]' : 'bg-slate-700 text-slate-200 max-w-[75%]'}`}>
+                                <div className={`flex items-center gap-1.5 mb-1 px-1`}>
+                                    <span className='text-[10px] font-bold uppercase tracking-widest text-[var(--ide-text-muted)]'>
+                                        {msg.sender?._id === 'ai' ? 'AI Assistant' : isUser ? 'You' : msg.sender?.email?.split('@')[0]}
+                                    </span>
+                                </div>
+                                <div className={`p-3 px-4 rounded-[8px] text-xs leading-relaxed transition-all ${
+                                    msg.sender?._id === 'ai' 
+                                        ? 'bg-[#0f172a] text-[var(--ide-text-active)] border border-[var(--ide-accent)]/30 max-w-[95%] shadow-sm' 
+                                        : isUser 
+                                            ? 'bg-[var(--ide-surface)] text-[var(--ide-text-active)] border border-[var(--ide-border)] max-w-[85%]' 
+                                            : 'bg-transparent text-[var(--ide-text-secondary)] border border-[var(--ide-border)] max-w-[85%]'
+                                }`}>
+                                    {msg.sender?._id === 'ai' && (
+                                        <div className="text-[10px] font-bold text-[var(--ide-accent)] mb-1 uppercase tracking-wider">@ai</div>
+                                    )}
                                     {msg.sender?._id === 'ai' ?
                                         writeAiMessage(msg.message)
-                                        : <p className='leading-relaxed'>{msg.message}</p>}
+                                        : <p>{msg.message}</p>}
                                 </div>
                             </div>
                         )
@@ -42,47 +48,36 @@ const ChatPanel = ({ messages, message, setMessage, send, isSidePanelOpen, setIs
 
                     {streamingMessage && (
                         <div className='flex flex-col items-start'>
-                            <small className='opacity-65 text-[10px] mb-1 px-1 text-slate-400'>AI Assistant</small>
-                            <div className='p-2 px-3 rounded-2xl text-sm shadow-sm bg-slate-800 text-slate-100 max-w-[85%] border border-slate-700'>
+                            <div className="flex items-center gap-1.5 mb-1 px-1">
+                                <span className='text-[10px] font-bold uppercase tracking-widest text-[var(--ide-text-muted)]'>AI Assistant</span>
+                                <div className="w-1.5 h-1.5 bg-[var(--ide-accent)] rounded-full animate-pulse"></div>
+                            </div>
+                            <div className='p-3 px-4 rounded-[8px] text-xs bg-[#0f172a] text-[var(--ide-text-active)] border border-[var(--ide-accent)]/30 max-w-[95%] shadow-sm'>
+                                <div className="text-[10px] font-bold text-[var(--ide-accent)] mb-1 uppercase tracking-wider">@ai</div>
                                 {writeAiMessage(streamingMessage)}
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="inputField w-full flex p-3 bg-slate-800 border-t border-slate-700 absolute bottom-0 gap-2">
-                    <input
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        className='bg-slate-900 text-slate-100 p-2 px-4 rounded-full border border-slate-700 outline-none flex-grow text-sm focus:border-blue-500 transition-colors' 
-                        type="text" 
-                        placeholder='Type a message... (@ai for help)' 
-                        onKeyDown={(e) => e.key === 'Enter' && send()}
-                    />
-                    <button
-                        onClick={send}
-                        className='p-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all flex items-center justify-center'>
-                        <i className="ri-send-plane-2-fill text-lg"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div className={`sidePanel w-full h-full flex flex-col bg-slate-800 absolute z-20 transition-all duration-300 ease-in-out ${isSidePanelOpen ? 'translate-x-0' : '-translate-x-full'} top-0`}>
-                <header className='flex justify-between items-center px-4 p-3 bg-slate-900 border-b border-slate-700'>
-                    <h1 className='font-semibold text-slate-100'>Collaborators</h1>
-                    <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='p-1 text-slate-400 hover:text-white'>
-                        <i className="ri-close-line text-2xl"></i>
-                    </button>
-                </header>
-                <div className="users flex flex-col gap-1 p-2 overflow-auto">
-                    {project.users && project.users.map(u => (
-                        <div key={u._id} className="user cursor-pointer hover:bg-slate-700/50 p-2 rounded-lg flex gap-3 items-center transition-colors">
-                            <div className='w-8 h-8 rounded-full flex items-center justify-center text-white bg-blue-600 font-bold text-xs'>
-                                {u.email ? u.email[0].toUpperCase() : '?'}
-                            </div>
-                            <h1 className='font-medium text-slate-200 text-sm'>{u.email}</h1>
-                        </div>
-                    ))}
+                <div className="p-4 bg-[var(--ide-surface)] border-t border-[var(--ide-border)] shrink-0">
+                    <div className="relative group">
+                        <input
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            className='w-full bg-[var(--ide-bg)] text-[var(--ide-text-active)] p-3 px-4 pr-12 rounded-[8px] border border-[var(--ide-border)] outline-none text-xs focus:border-[var(--ide-accent)]/50 focus:ring-1 focus:ring-[var(--ide-accent)]/50 transition-all placeholder:text-[var(--ide-text-muted)] shadow-inner' 
+                            type="text" 
+                            placeholder='@ai or chat...' 
+                            onKeyDown={(e) => e.key === 'Enter' && send()}
+                        />
+                        <button
+                            onClick={send}
+                            disabled={!message.trim()}
+                            className='absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-[var(--ide-text-muted)] hover:text-[var(--ide-accent)] disabled:opacity-50 disabled:hover:text-[var(--ide-text-muted)] transition-colors rounded-[4px] hover:bg-[var(--ide-accent)]/10'
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
